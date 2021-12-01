@@ -26,6 +26,10 @@ dependencies:
 - profunctors
 - free-category
 - free-algebras
+- profunctor-system
+- data-fix
+- data-fix-cse
+- traverse-with-class
 
 library:
   source-dirs: src

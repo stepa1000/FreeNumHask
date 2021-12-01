@@ -4,122 +4,56 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE Arrows #-}
 --{-# LANGUAGE CPP                 #-}
 
 module Control.Free.Algebra.Arrow where
 
 import qualified Prelude
+import Prelude (const)
 
 import Control.Free.Algebra.Prelude
+import Data.Profunctor.Traversing
 
 import Data.Semigroup as SG
 
-eitherToMT :: Either a b -> (Maybe a,Maybe b)
-eitherToMT (Right c) = (Nothing, Just c)
-eitherToMT (Left c) = (Just c,Nothing)
-
-mtToEither :: (Maybe a,Maybe b) -> Either a b
-mtToEither (_,Just b) = Right b
-mtToEither (Just a,_) = Left a
-
-newtype ProArrow p a b = ProArrow
-  {runProArrow :: Queue (Sum (->) p) a b}
-
-instance Category (ProArrow p a b) where
-  id = ProArrow NilQ
-  ProArrow a . ProArrow b = ProArrow $ a . b
-
-instance ( Profunctor p
-         , Strong p
-         )
-         => Arrow (ProArrow p a b) where
-  arr bc = ProArrow $ ConsQ (L2 bc) NilQ
-  first (ProArrow bc) = ProArrow $ zipWithQ first' bc id
-
-{-}
-pseudoArrEither :: Arr f a b -> Arr f c d -> FreeMapping (Arr f) (Either a c) (Either b d)
-pseudoArrEither al ar = proc eac -> do
-  mm <- *** ( ar . arr fu ) -< eitherToMT eac
-  where
-    fu (Just a) = a
-    fu Nothing = undefined
--}
 --import Data.Bifunctor as Bi
-{-}
-newtype AltArr p a b = (Profunctor p, Choice p) => AltArr
-  {unAltArr :: Arr p a b}
-  deriving ()
--}
-{-}
-instance ( Profunctor p
-         , Choice p
-         )
-         => ArrowChoice (Arr p) where
-  left ab =
--}
-{-}
-{-}
-newtype AA f a b = AA
-  {runAA :: forall r. (Arrow r,ArrowChoice r)
-         => (forall x y. f x y -> r x y)
-         -> r a b
-  }
-
-instance Category (AA f) where
-  id = AA (\_ -> id)
-  AA f . AA g = AA $ \k -> f k . g k
-
-instance Semigroup (AA f o o) where
-    f <> g = f . g
-
-instance Monoid (AA f o o) where
-    mempty = id
-    mappend = (<>)
-
-instance Arrow (AA f) where
-  arr f = AA (\_ -> (arr f))
-  AA f *** AA g  = AA $ \k -> f k *** g k
-  first  (AA f)  = AA $ \k -> first (f k)
-  second (AA f)  = AA $ \k -> second (f k)
-
-instance ArrowChoice (AA f) where
-  left (AA f) = AA $ \k -> left (f k)
-  right (AA f) = AA $ \k -> right (f k)
-  AA f +++ AA g = AA $ \k -> f k +++ g k
-  AA f ||| AA g = AA $ \k -> f k ||| g k
-
-type instance AlgebraType0 AA f = ()
-type instance AlgebraType  AA c = (Arrow c,ArrowChoice c)
-
-instance FreeAlgebra2 AA where
-  liftFree2 = \fab -> AA $ \k -> k fab
-  {-# INLINE liftFree2 #-}
-
-  foldNatFree2 fun (AA f) = f fun
-  {-# INLINE foldNatFree2 #-}
-
-  codom2  = Proof
-  forget2 = Proof
--}
 
 data AltArr f a b where
   AId    :: AltArr f a a
   ACons  :: f b c     -> Queue (AltArr f) a b -> AltArr f a c
   AArr   :: (b -> c)  -> AltArr f a b -> AltArr f a c
   AProd  :: AltArr f a b -> AltArr f a c -> AltArr f a (b, c)
-  ASum   :: AltArr f a c -> AltArr f d c -> AltArr f (Either a d) c
+  ASum   :: AltArr f x (Either a d) -> AltArr f a c -> AltArr f d c -> AltArr f x c
+  AApp   :: AltArr f x (AltArr f b c,b) -> AltArr f x c -- ????
 
 arrAltArr :: (b -> c) -> AltArr f b c
 arrAltArr f = AArr f AId
 
-foldAltArr :: forall f arr a b. (Arrow arr, ArrowChoice arr)
+foldAltArr :: forall f arr a b. (Arrow arr, ArrowChoice arr, ArrowApply arr)
            => (forall x y. f x y -> arr x y) -> AltArr f a b -> arr a b
 foldAltArr _   AId = id
 foldAltArr fun (ACons bc ab) = fun bc . foldNatQ (foldNatFree2 fun) ab
 foldAltArr fun (AArr f g)    = arr f  . foldNatFree2 fun g
 foldAltArr fun (AProd f g)   = foldNatFree2 fun f &&& foldNatFree2 fun g
-foldAltArr f (ASum aa1 aa2)  = foldAltArr f aa1 ||| foldAltArr f aa2
+foldAltArr f (ASum fx aa1 aa2)  = foldAltArr f aa1 ||| foldAltArr f aa2 <<< foldAltArr f fx
+foldAltArr f (AApp ff) = foldAltArr f ff >>> first (arr (foldAltArr f) ) >>> app
 
+joinAltArr :: AltArr (AltArr f) a b -> AltArr f a b
+joinAltArr = foldNatFree2 id
+{-}
+joinAltArr :: AltArr (AltArr f) a b -> AltArr f a b
+joinAltArr AId = AId
+joinAltArr (ACons (fbc :: AltArr f b c) (qaa :: Queue (AltArr (AltArr f)) a b ) )
+  = ACons fbc (foldNatQ (f . joinAltArr) qaa :: Queue (AltArr f) a c)
+  where
+    f :: AltArr f x y -> Queue (AltArr f) x y
+    f x = ConsQ x NilQ
+joinAltArr (AArr bc aa) = AArr bc (joinAltArr aa)
+joinAltArr (AProd aa1 aa2) = AProd (joinAltArr aa1) (joinAltArr aa2)
+joinAltArr (ASum fxeab fac fdc) = ASum (joinAltArr fxeab) (joinAltArr fac) (joinAltArr fdc)
+-}
 instance Category (AltArr f :: Type -> Type -> Type) where
   id = AId
   AId . f = f
@@ -127,7 +61,9 @@ instance Category (AltArr f :: Type -> Type -> Type) where
   (ACons f g) . h  = ACons f (g `snocQ` h)
   (AArr f g)  . h  = AArr f (g . h)
   (AProd f g) . h  = AProd (f . h) (g . h)
-  (ASum f g :: AltArr f (Either a d) c) . (h :: AltArr f b (Either a d)) = ACons (ASum f g) (ConsQ h NilQ)   --(f . arr Left . h) (g . arr Right . h)
+  (ASum fx f g) . h
+    = ASum (fx . h) f g   --(f . arr Left . h) (g . arr Right . h)
+  (AApp a) . h = AApp (h >>> a )
 
 instance Arrow (AltArr f) where
   arr       = arrAltArr
@@ -137,18 +73,22 @@ instance Arrow (AltArr f) where
   (&&&)     = AProd
 
 instance ArrowChoice (AltArr f) where
-  (|||) = ASum
-  left bc = ASum (arr Left . bc) (arr Right)
-  right bc = ASum (arr Left) (arr Right . bc)
-  ac +++ bc = ASum (arr Left . ac) (arr Right . bc)
+  (|||) = ASum id
+  left bc = ASum id (arr Left . bc) (arr Right)
+  right bc = ASum id (arr Left) (arr Right . bc)
+  ac +++ bc = ASum id (arr Left . ac) (arr Right . bc)
+
+instance ArrowApply (AltArr f) where
+  app = AApp id
 
 type instance AlgebraType0 AltArr f = ()
-type instance AlgebraType  AltArr c = (Arrow c,ArrowChoice c)
+type instance AlgebraType  AltArr c = (Arrow c,ArrowChoice c,ArrowApply c)
 
 instance FreeAlgebra2 AltArr where
   liftFree2 = \fab -> ACons fab NilQ
   foldNatFree2 = foldAltArr
   codom2  = Proof
+--  forget2 :: forall (f :: k -> k -> Type). AlgebraType AltArr f => Proof (AlgebraType0 AltArr f) (AltArr f)
   forget2 = Proof
 
 instance Semigroup (AltArr f o o) where
@@ -157,4 +97,36 @@ instance Semigroup (AltArr f o o) where
 instance Monoid (AltArr f o o) where
     mempty = AId
     mappend = (<>)
--}
+
+instance Profunctor (AltArr f) where
+  dimap fl fr a = arr fr . a . arr fl
+
+instance ProfunctorFunctor AltArr where
+  promap f = foldAltArr (liftFree2 . f)
+
+instance ProfunctorMonad AltArr where
+  proreturn = liftFree2
+  projoin = joinAltArr
+
+instance Strong (AltArr f) where
+  first' = first
+  second' = second
+
+instance Choice (AltArr f) where
+  left' = left
+  right' = right
+
+--instance Closed p => Closed (AltArr p) where
+--  closed = hoistFree2 closed
+
+arrowToMonad :: ArrowApply ar => ar a b -> a -> ArrowMonad ar b
+arrowToMonad ar a = ArrowMonad (ar . arr (const a) )
+
+unArrowMonad (ArrowMonad ar) = ar
+runArrowMonad :: ArrowApply ar => ar (ArrowMonad ar b) b
+runArrowMonad = app <<< arr unArrowMonad &&& arr (const ())
+
+instance Traversing (AltArr f) where
+  traverse' pab = proc fa -> do
+    fb <- runArrowMonad -< mapM (arrowToMonad pab) fa
+    returnA -< fb
