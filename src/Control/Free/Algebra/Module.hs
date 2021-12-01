@@ -144,18 +144,16 @@ proMapFixDivisiveAction :: (DivisiveAction mb b, Divisive b)
 proMapFixDivisiveAction pmamb pab = proLetFoldFix pmamb (joinAltArr $
   proMapFreeAction unFreeDivisiveAction (./) id (liftFree2 pab) )
 
-data FreeModule a m =
-    FModDist (FreeDistributive m)
-  | FModMultAct (FreeMultiplicativeAction a m)
+newtype FreeModule a m = FModMultAct
+  {unFModMultAct :: FreeMultiplicativeAction a m}
   deriving (Traversable, Foldable, Functor)
 
-annihilationFreeModule :: FreeModule a m -> Either (FreeDistributive m) (FreeMultiplicativeAction a m)
-annihilationFreeModule (FModDist fd) = Left fd
-annihilationFreeModule (FModMultAct fm) = Right fm
+annihilationFreeModule :: FreeModule a m -> FreeMultiplicativeAction a m
+annihilationFreeModule (FModMultAct fm) = fm
 
 newtype FixModule a m = FixModule
   {unFixModule :: FixLetVar m (FreeModule a)}
-
+{-}
 instance Additive (FixModule a m) where
   (FixModule x :: FixModule a m) + (FixModule y :: FixModule a m) = FixModule v
     where
@@ -166,16 +164,23 @@ instance Additive (FixModule a m) where
 instance Multiplicative (FixModule a m) where
   (FixModule x) * (FixModule y) = FixModule $ Fix $ LetExp $ Exp $ FModDist $ FDMult $ Mult x y
   one = FixModule $ Fix $ LetExp $ Exp $ FModDist $ FDMult One
-
+-}
 instance Multiplicative a => MultiplicativeAction (FixModule a m) a where
   a .* (FixModule m) = FixModule $ Fix $ LetExp $ Exp $ FModMultAct $ FreeMultiplicativeAction $ ActAdd a m
   (FixModule m) *. a = FixModule $ Fix $ LetExp $ Exp $ FModMultAct $ FreeMultiplicativeAction $ ActAdd a m
-
-proMapFreeModule :: (Module mb b,Distributive mb)
+{-}
+proMapFreeModule :: (Module mb b,Distributive b)
                  => p ma mb
                  -> p a b
                  -> AltArr p (FreeModule a ma) mb
 proMapFreeModule pmamb pab = proc aafm -> do
-  mb <- id ||| id <<< proMapFreeDistributive pmamb +++ (proMapFreeAction unFreeMultiplicativeAction (.*) pmamb pab)
+  mb <- id ||| id <<< proMapFreeDistributive pab +++ (proMapFreeAction unFreeMultiplicativeAction (.*) pmamb pab)
     -< annihilationFreeModule aafm
   returnA -< mb
+-}
+proMapFixModule :: (Module mb b,Distributive b)
+                => p ma mb
+                -> p a b
+                -> AltArr p (FixModule a ma) mb
+proMapFixModule pmamb pab = arr unFixModule >>> proLetFoldFix pmamb (joinAltArr $
+  proMapFreeAction (unFreeMultiplicativeAction . unFModMultAct) (.*) id (liftFree2 pab) )
