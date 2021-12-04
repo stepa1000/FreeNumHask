@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           FreeNumHask
-version:        0.1.0.3
+version:        0.1.0.4
 description:    Please see the README on GitHub at <https://github.com/githubuser/FreeNumHask#readme>
 homepage:       https://github.com/githubuser/FreeNumHask#readme
 bug-reports:    https://github.com/githubuser/FreeNumHask/issues

@@ -19,16 +19,16 @@ packages:
   original:
     hackage: free-algebras-0.1.0.1@sha256:ebaac4d07ecf4a3ba106dc064a102ea82c44deabc2e79fcec21a4df40ddc17a2,2525
 - completed:
-    size: 15015
-    url: https://github.com/stepa1000/profunctor-system/archive/509a7dc0654edf3a1d36c7b8cf5d284f95be7abd.tar.gz
+    size: 16262
+    url: https://github.com/stepa1000/profunctor-system/archive/55310aba6c93d8b9137a3204459497458fd09899.tar.gz
     name: profunctor-system
-    version: 0.1.1.1
-    sha256: eac018e102ea10ded3bfd4966be1d7237ffbc2ebb75f41107d2b4e9dfdca7fc9
+    version: 0.1.1.3
+    sha256: 70d67ff051e0883674191dbc53afd2859e96145f26c9b98d1b7de26238637b91
     pantry-tree:
-      size: 1836
-      sha256: ae48d749f87be7db2ef89800aa9c5f0e2795caf6ab89b4d80f2d9877639e0990
+      size: 2060
+      sha256: a626f7614ebd99cdb2e4e8167a442b4e3898e54bddc92226840cf69cf464067e
   original:
-    url: https://github.com/stepa1000/profunctor-system/archive/509a7dc0654edf3a1d36c7b8cf5d284f95be7abd.tar.gz
+    url: https://github.com/stepa1000/profunctor-system/archive/55310aba6c93d8b9137a3204459497458fd09899.tar.gz
 - completed:
     hackage: data-fix-cse-0.0.3@sha256:c29b23ed2d321e11314599d7a9b8a9d67d5f5dc1206d5665b3408a7d826a8bdc,1000
     pantry-tree:
