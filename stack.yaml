@@ -39,7 +39,7 @@ extra-deps:
 - free-category-0.0.4.3@sha256:44f1f6d5a08f5067768fdddb88c3ac56290361cddb52c23aa552234f34e6717c,2314
 - free-algebras-0.1.0.1@sha256:ebaac4d07ecf4a3ba106dc064a102ea82c44deabc2e79fcec21a4df40ddc17a2,2525
 - github: stepa1000/profunctor-system
-  commit: da7be2a4c1c545c2459b83404fc99158ed7251f5
+  commit: a7c2062b7b6a81415b634e4821c26a7a99e0494d
 - data-fix-cse-0.0.3@sha256:c29b23ed2d321e11314599d7a9b8a9d67d5f5dc1206d5665b3408a7d826a8bdc,1000
 # - acme-missiles-0.3 5c67beb3337dbd6964e30f14c52aeb2075af80b1
 # - git: https://github.com/commercialhaskell/stack.git
